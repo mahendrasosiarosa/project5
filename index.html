@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMD Monitoring System By Sosiarosa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="loginSection">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="login-logo">RMD</div>
+                    <p class="login-subtitle">Monitoring System By Sosiarosa</p>
+                </div>
+                <div class="login-body">
+                    <form id="loginForm">
+                        <div class="mb-4">
+                            <label for="loginUsername" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="loginUsername" placeholder="Masukkan username" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="loginPassword" class="form-label">Password</label>
+                            <div class="position-relative">
+                                <input type="password" class="form-control" id="loginPassword" placeholder="Masukkan password" required>
+                                <button type="button" class="btn btn-sm position-absolute top-50 end-0 translate-middle-y me-2" onclick="togglePasswordVisibility()">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login ke Sistem
+                        </button>
+                    </form>
+                    
+                    <!-- Demo Accounts -->
+                    <div class="demo-accounts mt-4">
+                        <h6 class="fw-bold">Akun Demo:</h6>
+                        <div class="small">
+                            <div><strong>Owner:</strong> owner / owner123</div>
+                            <div><strong>Admin:</strong> admin / admin123</div>
+                            <div><strong>Sales:</strong> sales01 / sales123</div>
+                            <div><strong>Gudang:</strong> gudang01 / gudang123</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="appSection" class="hidden">
+        <!-- Mobile Header -->
+        <div class="mobile-header">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="text-center flex-grow-1">
+                <div style="font-weight: 700; font-size: 1.1rem;">RMD</div>
+                <div style="font-size: 0.75rem; opacity: 0.9;" id="mobileUserRole">Monitoring System</div>
+            </div>
+            <div class="position-relative">
+                <i class="fas fa-bell clickable" onclick="showNotifications()"></i>
+                <span class="notification-badge" onclick="showNotifications()">3</span>
+            </div>
+        </div>
+
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3 class="mb-2"><i class="fas fa-chart-line me-2"></i>RMD</h3>
+                <p class="mb-0" style="font-size: 0.9rem;" id="sidebarUserInfo">Monitoring System By Sosiarosa</p>
+                <div class="sync-status sync-online mt-3" id="sidebarSyncStatus">
+                    <i class="fas fa-circle me-1"></i>Online Mode
+                </div>
+            </div>
+            <div class="sidebar-menu">
+                <ul>
+                    <li><a href="#" class="active" data-page="dashboard"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a></li>
+                    
+                    <li class="menu-section">Sales & Operations</li>
+                    <li><a href="#" data-page="visitForm"><i class="fas fa-store"></i> <span>Kunjungan Toko</span></a></li>
+                    <li><a href="#" data-page="salesHistory"><i class="fas fa-history"></i> <span>Riwayat Saya</span></a></li>
+                    <li><a href="#" data-page="memberManagement"><i class="fas fa-users"></i> <span>Data Member</span></a></li>
+                    
+                    <li class="menu-section">Inventory & Products</li>
+                    <li><a href="#" data-page="productManagement"><i class="fas fa-boxes"></i> <span>Manajemen Produk</span></a></li>
+                    
+                    <!-- OWNER ONLY MENU -->
+                    <li class="menu-section owner-only hidden">Owner Administration</li>
+                    <li class="owner-only hidden"><a href="#" data-page="financialReports"><i class="fas fa-chart-pie"></i> <span>Laporan Keuangan</span></a></li>
+                    <li class="owner-only hidden"><a href="#" data-page="userManagement"><i class="fas fa-users-cog"></i> <span>User Management</span></a></li>
+                    
+                    <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            
+            <!-- Dashboard Page -->
+            <div id="dashboardPage" class="page-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-1 fw-bold">Dashboard Overview</h4>
+                        <small class="text-muted" id="dashboardSubtitle">Ringkasan performa bisnis hari ini</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary clickable" onclick="refreshDashboard()">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                        <button class="btn btn-sm btn-primary clickable" onclick="exportDashboard()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <button class="btn btn-sm btn-success owner-only hidden clickable" onclick="generateOwnerReport()" id="ownerReportBtn">
+                            <i class="fas fa-file-pdf"></i> Owner Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Owner Quick Actions -->
+                <div class="row g-3 mb-4 owner-only hidden" id="ownerQuickActions">
+                    <div class="col-12">
+                        <div class="card owner-feature">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-danger w-100 clickable" onclick="showFinancialSummary()">
+                                            <i class="fas fa-chart-pie me-2"></i>Financial Summary
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-warning w-100 clickable" onclick="showPerformanceReport()">
+                                            <i class="fas fa-trophy me-2"></i>Performance Report
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-info w-100 clickable" onclick="showSystemHealth()">
+                                            <i class="fas fa-heartbeat me-2"></i>System Health
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card stat-card-1 clickable" onclick="showSalesDetail()">
+                            <i class="fas fa-shopping-bag"></i>
+                            <h3 id="statSalesToday">0</h3>
+                            <p>Penjualan Hari Ini</p>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card stat-card-2 clickable" onclick="showRevenueDetail()">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <h3 id="statRevenueToday">Rp 0</h3>
+                            <p>Total Revenue</p>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card stat-card-3 clickable" onclick="showVisitsDetail()">
+                            <i class="fas fa-store"></i>
+                            <h3 id="statVisitsToday">0</h3>
+                            <p>Kunjungan Sales</p>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stat-card stat-card-4 clickable" onclick="showLowStock()">
+                            <i class="fas fa-box"></i>
+                            <h3 id="statLowStock">0</h3>
+                            <p>Stok Menipis</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12 col-md-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span class="fw-bold">Sales Performance</span>
+                                <select class="form-select form-select-sm" style="width: auto;" onchange="updateSalesChart(this.value)">
+                                    <option>Hari Ini</option>
+                                    <option>Minggu Ini</option>
+                                    <option selected>Bulan Ini</option>
+                                </select>
+                            </div>
+                            <div class="card-body">
+                                <div style="height: 250px;">
+                                    <canvas id="salesChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12 col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="fw-bold">Target Penjualan</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Progress Bulan Ini</span>
+                                        <span class="fw-bold text-success">75%</span>
+                                    </div>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar bg-success" style="width: 75%"></div>
+                                    </div>
+                                    <div class="mt-2 text-center">
+                                        <small class="text-muted">Rp 25.000.000 / Rp 33.000.000</small>
+                                    </div>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm w-100 clickable" onclick="showTargetDetails()">
+                                    Lihat Detail Target
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visit Form Page -->
+            <div id="visitFormPage" class="page-content hidden">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-1 fw-bold">Form Kunjungan Toko</h4>
+                        <small class="text-muted">Input data kunjungan dan penjualan</small>
+                    </div>
+                    <button class="btn btn-primary clickable" onclick="showVisitHistory()">
+                        <i class="fas fa-history me-2"></i>Riwayat Kunjungan
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <form id="visitForm">
+                            <div class="location-sharing" id="locationContainer">
+                                <p class="mb-2"><i class="fas fa-map-marker-alt me-2"></i>Lokasi Real-time</p>
+                                <button type="button" class="btn btn-primary btn-sm" id="shareLocationBtn" onclick="getCurrentLocation()">
+                                    <i class="fas fa-location-arrow me-2"></i>Share Lokasi
+                                </button>
+                                <div id="locationStatus" class="mt-2 small"></div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nama Toko</label>
+                                    <input type="text" class="form-control" id="storeName" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Pemilik Toko</label>
+                                    <input type="text" class="form-control" id="storeOwner" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">No WhatsApp</label>
+                                    <input type="text" class="form-control" id="storePhone" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Produk</label>
+                                    <select class="form-select" id="visitProduct" required>
+                                        <option value="">Pilih Produk</option>
+                                        <option value="PRD-001">Produk A - Rp 50,000</option>
+                                        <option value="PRD-002">Produk B - Rp 75,000</option>
+                                        <option value="PRD-003">Produk C - Rp 100,000</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Alamat Toko</label>
+                                <textarea class="form-control" id="storeAddress" rows="2" required></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Jumlah</label>
+                                    <input type="number" class="form-control" id="visitQuantity" required min="1">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Status Kunjungan</label>
+                                    <select class="form-select" id="visitStatus" required>
+                                        <option value="success">Berhasil Jual</option>
+                                        <option value="followup">Follow Up</option>
+                                        <option value="cancel">Batal</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Scan Barcode</label>
+                                    <button type="button" class="btn btn-outline-secondary w-100" onclick="scanBarcode()">
+                                        <i class="fas fa-barcode me-2"></i>Scan Barcode
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Catatan Kunjungan</label>
+                                <textarea class="form-control" id="visitNotes" rows="3" placeholder="Keterangan tambahan..."></textarea>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary clickable" id="submitVisitBtn" disabled>
+                                    <i class="fas fa-paper-plane me-2"></i>Simpan Kunjungan
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary clickable" onclick="resetVisitForm()">
+                                    <i class="fas fa-redo me-2"></i>Reset Form
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales History Page -->
+            <div id="salesHistoryPage" class="page-content hidden">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-1 fw-bold">Riwayat Kunjungan</h4>
+                        <small class="text-muted">Data lengkap semua kunjungan sales</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary clickable" onclick="exportVisitsData()">
+                            <i class="fas fa-download me-2"></i>Export Data
+                        </button>
+                        <button class="btn btn-primary clickable" onclick="showVisitForm()">
+                            <i class="fas fa-plus me-2"></i>Tambah Kunjungan
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th>Nama Toko</th>
+                                        <th>Lokasi</th>
+                                        <th>Produk</th>
+                                        <th>Jumlah</th>
+                                        <th>Status</th>
+                                        <th>Sales</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="visitTableBody">
+                                    <!-- Data akan diisi oleh JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Management Page -->
+            <div id="productManagementPage" class="page-content hidden">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-1 fw-bold">Manajemen Produk</h4>
+                        <small class="text-muted">Kelola data produk dan inventory</small>
+                    </div>
+                    <button class="btn btn-primary clickable" onclick="showAddProductModal()" id="addProductBtn">
+                        <i class="fas fa-plus me-2"></i>Tambah Produk
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Kode</th>
+                                        <th>Barcode</th>
+                                        <th>Nama Produk</th>
+                                        <th>Kategori</th>
+                                        <th>Harga</th>
+                                        <th>Stok</th>
+                                        <th>Status</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productTableBody">
+                                    <!-- Data akan diisi oleh JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Member Management Page -->
+            <div id="memberManagementPage" class="page-content hidden">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-1 fw-bold">Manajemen Member</h4>
+                        <small class="text-muted">Kelola data member grosir, agen, dan retail</small>
+                    </div>
+                    <button class="btn btn-primary clickable" onclick="showAddMemberModal()" id="addMemberBtn">
+                        <i class="fas fa-plus me-2"></i>Tambah Member
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div id="memberMap" style="height: 300px; margin-bottom: 20px;"></div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID Member</th>
+                                        <th>Nama</th>
+                                        <th>Tipe</th>
+                                        <th>Telepon</th>
+                                        <th>Alamat</th>
+                                        <th>Lokasi</th>
+                                        <th>Status</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="memberTableBody">
+                                    <!-- Data akan diisi oleh JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Management Page -->
+            <div id="userManagementPage" class="page-content hidden">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-1 fw-bold">Manajemen User</h4>
+                        <small class="text-muted">Kelola user dan hak akses sistem</small>
+                    </div>
+                    <button class="btn btn-primary clickable" onclick="showAddUserModal()" id="addUserBtn">
+                        <i class="fas fa-plus me-2"></i>Tambah User
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Nama Lengkap</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th>Terakhir Login</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userTableBody">
+                                    <!-- Data akan diisi oleh JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Reports Page (Owner Only) -->
+            <div id="financialReportsPage" class="page-content hidden">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-1 fw-bold">Laporan Keuangan</h4>
+                        <small class="text-muted">Laporan finansial lengkap untuk owner</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-success clickable" onclick="exportFinancialReport()">
+                            <i class="fas fa-file-excel me-2"></i>Export Excel
+                        </button>
+                        <button class="btn btn-danger clickable" onclick="generatePDFReport()">
+                            <i class="fas fa-file-pdf me-2"></i>Generate PDF
+                        </button>
+                        <button class="btn btn-primary clickable" onclick="sendEmailReport()">
+                            <i class="fas fa-envelope me-2"></i>Kirim ke Email
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card stat-card-1 clickable" onclick="showRevenueBreakdown()">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <h3>125JT</h3>
+                            <p>Total Revenue</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-card-2 clickable" onclick="showProfitAnalysis()">
+                            <i class="fas fa-chart-line"></i>
+                            <h3>45JT</h3>
+                            <p>Profit</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-card-3 clickable" onclick="showExpenseDetails()">
+                            <i class="fas fa-receipt"></i>
+                            <h3>80JT</h3>
+                            <p>Expenses</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-card-4 clickable" onclick="showAccountsReceivable()">
+                            <i class="fas fa-credit-card"></i>
+                            <h3>15JT</h3>
+                            <p>Piutang</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Detail Laporan Keuangan</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Laporan keuangan akan ditampilkan di sini untuk user dengan role Owner.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal untuk Add Product -->
+            <div class="modal fade" id="addProductModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Tambah Produk Baru</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="addProductForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Kode Produk</label>
+                                    <input type="text" class="form-control" id="productCode" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Nama Produk</label>
+                                    <input type="text" class="form-control" id="productName" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Kategori</label>
+                                    <select class="form-select" id="productCategory" required>
+                                        <option value="">Pilih Kategori</option>
+                                        <option value="Makanan">Makanan</option>
+                                        <option value="Minuman">Minuman</option>
+                                        <option value="Elektronik">Elektronik</option>
+                                        <option value="Lainnya">Lainnya</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Harga</label>
+                                    <input type="number" class="form-control" id="productPrice" required min="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Stok Awal</label>
+                                    <input type="number" class="form-control" id="productStock" required min="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Barcode</label>
+                                    <div class="barcode-container">
+                                        <svg id="barcode"></svg>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="generateBarcode()">
+                                        <i class="fas fa-barcode me-2"></i>Generate Barcode
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="button" class="btn btn-primary" onclick="saveNewProduct()">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal untuk Add Member -->
+            <div class="modal fade" id="addMemberModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Tambah Member Baru</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="addMemberForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Nama Member</label>
+                                        <input type="text" class="form-control" id="memberName" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Tipe Member</label>
+                                        <select class="form-select" id="memberType" required>
+                                            <option value="grosir">Grosir</option>
+                                            <option value="agen">Agen</option>
+                                            <option value="retail">Retail</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Telepon</label>
+                                        <input type="text" class="form-control" id="memberPhone" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="memberEmail">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Alamat</label>
+                                    <textarea class="form-control" id="memberAddress" rows="3" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Lokasi</label>
+                                    <div id="memberLocationMap" style="height: 200px;"></div>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="getMemberLocation()">
+                                        <i class="fas fa-map-marker-alt me-2"></i>Ambil Lokasi
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="button" class="btn btn-primary" onclick="saveNewMember()">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
